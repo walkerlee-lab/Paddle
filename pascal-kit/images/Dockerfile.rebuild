@@ -1,0 +1,7 @@
+# Pascal 重编 wheel + bf16→fp32 加载补丁（一体层）
+FROM paddleocr-vl-pascal:cu118
+COPY paddlepaddle_gpu-3.2.2-cp310-cp310-linux_x86_64.whl /tmp/
+RUN pip3 install --force-reinstall --no-deps /tmp/paddlepaddle_gpu-3.2.2-cp310-cp310-linux_x86_64.whl && \
+    rm -f /tmp/*.whl && \
+    sed -i 's|                    weight = weight._copy_to(|                    if weight.dtype == paddle.bfloat16:\n                        weight = weight.astype("float32")\n                    weight = weight._copy_to(|' \
+    /usr/local/lib/python3.10/dist-packages/paddlex/inference/models/common/transformers/transformers/model_utils.py

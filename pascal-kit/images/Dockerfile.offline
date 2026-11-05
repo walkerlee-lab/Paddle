@@ -1,0 +1,19 @@
+# Pascal(P100/sm_60) 离线就绪镜像：模型内置 + 运行期 flag 内置，开箱即用
+# 构建链：pascal-image/Dockerfile → cu118 基础镜像
+#        Dockerfile.rebuild2 → rebuild2（自编 Pascal wheel + fp32 加载补丁）
+#        本文件 → offline（+ 模型烘焙 + naive_best_fit + 默认产线配置）
+FROM paddleocr-vl-pascal:rebuild2
+
+# 运行期必需：StreamSafe 分配器在 Pascal 上有 bug，必须用 naive_best_fit
+ENV FLAGS_allocator_strategy=naive_best_fit
+# 离线环境跳过模型源连通性检查
+ENV PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
+
+# 烘焙 4 个模型（PP-DocLayoutV2 / PP-LCNet_x1_0_doc_ori / UVDoc / PaddleOCR-VL-1.6）
+COPY models/ /root/.paddlex/official_models/
+
+# 烘焙默认产线配置：use_doc_preprocessor=True + VLRecognition=PaddleOCR-VL-1.6-0.9B
+COPY pipeline_config_default.yaml /home/paddleocr/pipeline_config_default.yaml
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh

@@ -1,0 +1,44 @@
+# PaddleOCR-VL Pascal (sm_60/sm_61) 兼容镜像 —— 单容器进程内 Paddle 引擎
+# 与官方 cu128 双容器方案的区别：
+#   1. 基础镜像 CUDA 11.8 线（官方唯一含 Pascal kernel 的 paddlepaddle wheel 线）
+#   2. 不用 vLLM/FastDeploy（要求 CC>=8.0），VL 模型走 paddlex 进程内推理
+# 注意：
+#   - 基础镜像用 daocloud 完整引用，绕开目标机 daemon 里已失效的公共 mirror（ustc/163/百度）
+#   - NGC 系 CUDA 镜像 /tmp 权限为 1755，apt-key 无法建临时文件，须先 chmod 1777
+FROM docker.m.daocloud.io/nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1
+
+RUN chmod 1777 /tmp && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# paddlepaddle-gpu 3.2.2 cu118（PaddleOCR-VL 文档要求 >=3.2.1）
+RUN pip3 install paddlepaddle-gpu==3.2.2 \
+      -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+
+# PaddleOCR-VL 基础包（含 paddlex 依赖）
+# sentencepiece 固定 0.2.0：0.2.3 的 pb2 gencode 是 protobuf 7.36.1 生成的，
+# 与栈内 protobuf 6.x 运行时不兼容（VL 模型 tokenizer 初始化即崩）
+RUN pip3 install -U "paddleocr[doc-parser]" && \
+    pip3 install "sentencepiece==0.2.0"
+
+# opencv / paddle 运行库（单独一层，避免使上面的 pip 大层缓存失效）
+# apt 源换清华镜像：目标机直连 archive.ubuntu.com 极慢甚至卡死
+RUN sed -i 's|http://archive.ubuntu.com|https://mirrors.tuna.tsinghua.edu.cn|g; s|http://security.ubuntu.com|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list && \
+    chmod 1777 /tmp && apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libgl1 libglib2.0-0 libgomp1 libsm6 libxext6 libxrender1 libnuma1 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN paddlex --install serving
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+WORKDIR /home/paddleocr
+EXPOSE 8080
+
+ENTRYPOINT ["/entrypoint.sh"]
