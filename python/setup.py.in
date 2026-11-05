@@ -36,7 +36,7 @@ def git_commit() -> str:
             cwd="@PADDLE_SOURCE_DIR@").communicate()[0].strip()
     except:
         git_commit = 'Unknown'
-    git_commit = git_commit.decode()
+    git_commit = git_commit.decode() if isinstance(git_commit, bytes) else git_commit
     return str(git_commit)
 
 def _get_version_detail(idx):
@@ -797,7 +797,7 @@ def build_cutlass3_src_code():
     except:
         git_commit = 'Unknown'
         raise Exception("obtain commit id of third_party cutlass failed")
-    commit_id = str(git_commit.decode())
+    commit_id = str(git_commit.decode() if isinstance(git_commit, bytes) else git_commit)
     command = (
         'cd '
         + '${PADDLE_SOURCE_DIR}/third_party/cutlass && '
