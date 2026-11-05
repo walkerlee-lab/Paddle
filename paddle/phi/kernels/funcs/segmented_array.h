@@ -41,7 +41,7 @@ enum class SegmentedArraySize {
 };
 
 template <typename T, SegmentedArraySize Size, int Num = static_cast<int>(Size)>
-struct PADDLE_ALIGN(256) ValueArray {
+struct ValueArray {
  public:
   T data[Num];
 
@@ -53,7 +53,7 @@ struct PADDLE_ALIGN(256) ValueArray {
 };
 
 template <typename T>
-struct PADDLE_ALIGN(256) ValueArray<T, SegmentedArraySize::kVariableLength, 0> {
+struct ValueArray<T, SegmentedArraySize::kVariableLength, 0> {
  public:
   T* data{nullptr};
 
@@ -61,7 +61,7 @@ struct PADDLE_ALIGN(256) ValueArray<T, SegmentedArraySize::kVariableLength, 0> {
 };
 
 template <typename T, SegmentedArraySize Size>
-struct PADDLE_ALIGN(256) ConstPointerArray {
+struct ConstPointerArray {
  public:
   const T* data[static_cast<int>(Size)];
 
@@ -73,7 +73,7 @@ struct PADDLE_ALIGN(256) ConstPointerArray {
 };
 
 template <typename T>
-struct PADDLE_ALIGN(256)
+struct
     ConstPointerArray<T, SegmentedArraySize::kVariableLength> {
  public:
   const T** data{nullptr};
@@ -84,7 +84,7 @@ struct PADDLE_ALIGN(256)
 };
 
 template <typename T, SegmentedArraySize Size>
-struct PADDLE_ALIGN(256) PointerArray {
+struct PointerArray {
  public:
   T* data[static_cast<int>(Size)];
 
@@ -96,7 +96,7 @@ struct PADDLE_ALIGN(256) PointerArray {
 };
 
 template <typename T>
-struct PADDLE_ALIGN(256) PointerArray<T, SegmentedArraySize::kVariableLength> {
+struct PointerArray<T, SegmentedArraySize::kVariableLength> {
  public:
   T** data{nullptr};
 

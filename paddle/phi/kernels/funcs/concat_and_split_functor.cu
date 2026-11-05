@@ -81,7 +81,7 @@ struct PointerWrapper {
 };
 
 template <typename T, int Size>
-struct PADDLE_ALIGN(256) AlignedPointerWrapper
+struct AlignedPointerWrapper
     : public PointerWrapper<T, Size> {
  public:
   AlignedPointerWrapper() = default;
@@ -124,7 +124,7 @@ struct PointerToPointer {
 };
 
 template <typename T, typename IndexT, int Size>
-struct PADDLE_ALIGN(256) PointerAndColWrapper {
+struct PointerAndColWrapper {
  public:
   IndexT col_length[Size];
   PointerAndColWrapper(const phi::GPUContext& dev_ctx,

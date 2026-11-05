@@ -7,7 +7,7 @@
 | GPU | 状态 | 说明 |
 |---|---|---|
 | Tesla P100 (sm_60) | ✅ **全链路通过** | VL 1.6 fp32 单图 1.1s；完整管线 2~4s/页；分项报价表 PDF（2 页密集表格）133s，数字抽查全对 |
-| Tesla P40 (sm_61) | ❌ VL 不可用 | 静态图/基础算子正常，但 VL 加载链 elementwise kernel 群（bf16 copy / concat / uniform_inplace）存在源码级 bug，需深入 phi/kps 框架修复 |
+| Tesla P40 (sm_61) | ✅ **全链路通过**（2026-11-06 复验） | 好卡（GPU4）实测：VL 1.4s/图、完整管线 2.5s/页。此前『sm_61 elementwise kernel 源码级 bug』结论系测试机 GPU1 硬件故障（坏卡）污染，已推翻——独立 mini kernel 交叉验证：GPU1 崩（sm_60/sm_61 编译产物均复现 CUDA 700），GPU4/5/6 全过 |
 
 ## Pascal 上跑 Paddle 的三个独立病根与修复
 
@@ -48,7 +48,8 @@ GPU_ID=1 docker compose -f pascal-kit/compose.offline.yaml up -d
 
 ## 已知问题
 
-- **P40 (sm_61)**：见上表，未解决。
+- **25.13 机器 GPU1 为坏卡**（CUDA 700 非法访问、与内存布局相关的偶发）：部署时避开该卡（nvidia-smi 编号 1），其余 7 张 P40 实测正常。
+- 防御性加固：kernel 参数结构体（AlignedPointerWrapper / PointerAndColWrapper / ValueArray / ConstPointerArray / PointerArray）已去除 PADDLE_ALIGN(256)，消除 over-aligned 参数 ABI 的 nvcc 编译告警；与坏卡症状无因果，作为 hardening 保留。
 - p1 多表格堆叠的表头行识别为空：文档结构复杂度问题，非 Pascal 特有，需产线参数打磨。
 - 官方 `paddleocr genai_server`（vLLM 后端）不适用 Pascal（vLLM/Triton 要求 CC ≥ 7.0）；本方案为 paddlex 进程内单容器推理，无 continuous batching，吞吐低于生产 vLLM 拓扑——定位兜底档。
 - wheel 与模型不入库（GitHub 100MB 限制），按上述脚本重新生成。
